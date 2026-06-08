@@ -2,7 +2,6 @@ import { extractHiddenValue } from './htmlFields.js'
 import { FIXED_ANSWERS } from './fixedAnswers.js'
 
 const FORM_URL = 'https://raid-aventure.org/questionnaire-jeunes-prox/'
-const AJAX_URL = 'https://raid-aventure.org/wp-admin/admin-ajax.php'
 
 export async function fetchFormContext(formUrl) {
   const response = await fetch(formUrl)
@@ -25,13 +24,13 @@ export async function submitEntry(entry) {
   }
 
   const body = new FormData()
-  body.append('action', 'quform')
   body.append('quform_form_id', '9')
   body.append('quform_form_uid', context.formUid)
   body.append('quform_count', '1')
   body.append('form_url', FORM_URL)
   body.append('referring_url', '')
   body.append('post_id', context.postId)
+  body.append('post_title', "Questionnaire jeunes PROX'")
   body.append('quform_current_page_id', '1')
   body.append('quform_loaded', context.quformLoaded)
   body.append('quform_csrf_token', context.csrfToken)
@@ -43,9 +42,11 @@ export async function submitEntry(entry) {
   for (const [field, value] of Object.entries(FIXED_ANSWERS)) {
     body.append(field, value)
   }
+  body.append('quform_ajax', '1')
   body.append('quform_submit', 'submit')
+  body.append('quform_removed_upload_uids', '')
 
-  const response = await fetch(AJAX_URL, {
+  const response = await fetch(FORM_URL, {
     method: 'POST',
     headers: { Cookie: context.cookie ?? '' },
     body,

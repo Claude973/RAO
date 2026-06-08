@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\" -Force 2>&1; ls \"c:\\\\Users\\\\PC Jo\\\\Documents\" 2>&1 | head -20)",
+      "Read(//c/Users/PC Jo/Documents/**)",
+      "WebFetch(domain:raid-aventure.org)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" \"https://raid-aventure.org/questionnaire-jeunes-prox/\")",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" \"https://raid-aventure.org/questionnaire-jeunes-prox/\" -o /tmp/rao_form.html)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -D - -o /dev/null -A \"Mozilla/5.0\" -X OPTIONS \"https://raid-aventure.org/?quform=ajax\" -H \"Origin: https://example.com\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\\\\docs\\\\superpowers\\\\specs\")",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(gh repo *)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(cd /tmp && grep -oE '\"\\(ajaxUrl|url|action\\)\"\\\\s*:\\\\s*\"[^\"]*\"' rao_form.html | head -10 *)",
+      "Read(//c/tmp/**)",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://raid-aventure.org/wp-content/plugins/quform/cache/quform.js?ver=1778601259\" -o /tmp/quform.js)",
+      "Bash(npm --version)",
+      "Bash(git checkout *)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./relay/package.json'\\), null, 2\\)\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/vitest/package.json'\\).version, require\\('./node_modules/wrangler/package.json'\\).version, require\\('./node_modules/worker-mailer/package.json'\\).version\\)\")",
+      "Bash(git -C \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\" show df80396c592a04fd27e938da80db9be635162230 --stat)",
+      "Bash(git -C \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\" show df80396c592a04fd27e938da80db9be635162230)",
+      "Bash(git ls-tree *)",
+      "Bash(npx vitest *)",
+      "Bash(git -C \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\" show 4cbe110a25636bf66b4cd28322584dc5a032adcf)",
+      "Bash(git -C \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\" log -1 --format=%P 4cbe110a25636bf66b4cd28322584dc5a032adcf)",
+      "Bash(git -C \"c:\\\\Users\\\\PC Jo\\\\Documents\\\\RAO\" show --stat c9b92ae)",
+      "Bash(npx wrangler *)",
+      "Bash(git check-ignore *)",
+      "Bash(npx.cmd vitest *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\PC Jo\\Documents\\RAO\\docs\\superpowers"
+    ]
+  }
+}
