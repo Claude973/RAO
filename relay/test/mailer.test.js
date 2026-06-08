@@ -63,4 +63,22 @@ describe('sendRecapEmail', () => {
 
     expect(result).toEqual({ success: true })
   })
+
+  it('inclut le contenu HTML dans l\'e-mail quand il est fourni', async () => {
+    await sendRecapEmail({
+      credentials: CREDENTIALS,
+      to: 'claudegermain1@gmail.com',
+      subject: 'Récapitulatif RAO 8 juin 2026',
+      text: 'Total : 12 personnes saisies.',
+      html: '<table><tr><td>Féminin</td></tr></table>',
+    })
+
+    expect(sendMock).toHaveBeenCalledWith({
+      from: { name: 'RAO - Saisie vocale', email: 'rao.app@gmail.com' },
+      to: { email: 'claudegermain1@gmail.com' },
+      subject: 'Récapitulatif RAO 8 juin 2026',
+      text: 'Total : 12 personnes saisies.',
+      html: '<table><tr><td>Féminin</td></tr></table>',
+    })
+  })
 })
