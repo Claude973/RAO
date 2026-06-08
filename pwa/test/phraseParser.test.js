@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractDate, extractSexe } from '../src/phraseParser.js'
+import { extractDate, extractSexe, extractCount } from '../src/phraseParser.js'
 
 describe('extractDate', () => {
   it('extrait une date au format "le 8 juin 2026"', () => {
@@ -35,5 +35,27 @@ describe('extractSexe', () => {
 
   it('renvoie null si le sexe n\'est pas détecté', () => {
     expect(extractSexe('quatre personnes, entre 6 et 10 ans')).toBeNull()
+  })
+})
+
+describe('extractCount', () => {
+  it('extrait un nombre énoncé en toutes lettres avant "filles"', () => {
+    expect(extractCount('Le 8 juin 2026, quatre filles, entre 6 et 10 ans')).toBe(4)
+  })
+
+  it('extrait un nombre énoncé en toutes lettres avant "garçons"', () => {
+    expect(extractCount('deux garçons, entre 11 et 15 ans')).toBe(2)
+  })
+
+  it('extrait un nombre composé avant "personnes"', () => {
+    expect(extractCount('vingt-deux personnes, masculin, 19-25 ans')).toBe(22)
+  })
+
+  it('extrait un nombre dicté en chiffres', () => {
+    expect(extractCount('3 filles, entre 6 et 10 ans')).toBe(3)
+  })
+
+  it('renvoie null si aucun nombre n\'est trouvé avant le mot clé', () => {
+    expect(extractCount('des filles, entre 6 et 10 ans')).toBeNull()
   })
 })

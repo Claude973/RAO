@@ -1,3 +1,5 @@
+import { wordToNumber } from './numberWords.js'
+
 const MONTHS = {
   janvier: 1,
   février: 2,
@@ -37,4 +39,15 @@ export function extractSexe(phrase) {
   if (/\b(garçons?|masculin)\b/.test(lower)) return 'Masculin'
 
   return null
+}
+
+export function extractCount(phrase) {
+  const lower = phrase.toLowerCase()
+  const match = lower.match(/([a-zà-öø-ÿ0-9]+(?:-[a-zà-öø-ÿ]+)*)\s+(?:filles?|garçons?|personnes?)/)
+  if (!match) return null
+
+  const raw = match[1]
+  if (/^\d+$/.test(raw)) return parseInt(raw, 10)
+
+  return wordToNumber(raw)
 }
