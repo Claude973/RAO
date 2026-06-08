@@ -280,8 +280,8 @@ describe('createDicteeScreen — envoi', () => {
   })
 })
 
-describe('createDicteeScreen — comportement iOS (transcript pendant enregistrement)', () => {
-  it('traite automatiquement la transcription reçue pendant l\'enregistrement', () => {
+describe('createDicteeScreen — comportement iOS (pauses pendant enregistrement)', () => {
+  it('accumule les transcripts partiels pendant l\'enregistrement et traite au clic stop', () => {
     const container = makeContainer()
     const deps = makeDeps()
     deps.parsePhrase.mockReturnValue({
@@ -295,9 +295,17 @@ describe('createDicteeScreen — comportement iOS (transcript pendant enregistre
 
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireTranscript('un garçon onze quinze ans département soixante-neuf')
 
-    expect(deps.speechCapture.stop).toHaveBeenCalled()
+    // Simule iOS qui envoie un résultat partiel pendant l'enregistrement
+    deps.speechCapture._fireTranscript('un garçon onze')
+    // Le formulaire ne doit pas encore apparaître
+    expect(container.querySelector('.review-form')).toBeNull()
+    expect(container.querySelector('#mic-btn')).not.toBeNull()
+
+    // L'utilisateur clique sur stop — le transcript accumulé est traité
+    deps.speechCapture._fireTranscript('un garçon onze quinze ans département soixante-neuf')
+    container.querySelector('#mic-btn').click()
+
     expect(container.querySelector('.review-form')).not.toBeNull()
     expect(container.querySelector('#f-date').value).toBe('2026-06-09')
   })
