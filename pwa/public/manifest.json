@@ -2,7 +2,7 @@
   "name": "RAO — Saisie vocale",
   "short_name": "RAO",
   "description": "Application de saisie vocale pour les journées Prox de RAO",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1f4e79",

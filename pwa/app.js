@@ -8,7 +8,7 @@ import { createDicteeScreen } from './src/ui/dicteeScreen.js'
 import { createHistoriqueScreen } from './src/ui/historiqueScreen.js'
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/public/service-worker.js')
+  navigator.serviceWorker.register('./public/service-worker.js')
 }
 
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition
