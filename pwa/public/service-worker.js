@@ -1,23 +1,28 @@
 const CACHE_NAME = 'rao-v1'
-const SHELL = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/src/speechCapture.js',
-  '/src/notify.js',
-  '/src/recapEmail.js',
-  '/src/phraseParser.js',
-  '/src/numberWords.js',
-  '/src/sessionStore.js',
-  '/src/relayClient.js',
-  '/src/ui/dicteeScreen.js',
-  '/src/ui/historiqueScreen.js',
-  '/public/manifest.json',
-]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
+    (async () => {
+      const base = new URL(self.registration.scope).pathname
+      const SHELL = [
+        base,
+        `${base}index.html`,
+        `${base}app.js`,
+        `${base}src/speechCapture.js`,
+        `${base}src/notify.js`,
+        `${base}src/recapEmail.js`,
+        `${base}src/phraseParser.js`,
+        `${base}src/numberWords.js`,
+        `${base}src/sessionStore.js`,
+        `${base}src/relayClient.js`,
+        `${base}src/ui/dicteeScreen.js`,
+        `${base}src/ui/historiqueScreen.js`,
+        `${base}public/manifest.json`,
+      ]
+      const cache = await caches.open(CACHE_NAME)
+      await cache.addAll(SHELL)
+      await self.skipWaiting()
+    })()
   )
 })
 
