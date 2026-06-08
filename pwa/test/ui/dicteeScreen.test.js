@@ -179,3 +179,100 @@ describe('createDicteeScreen — revue/confirmation', () => {
     expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
   })
 })
+
+describe('createDicteeScreen — envoi', () => {
+  const PARSED_OK = {
+    ok: true,
+    date: '2026-06-08',
+    count: 2,
+    sexe: 'Féminin',
+    trancheAge: '6 - 10 ans',
+    departement: '69',
+  }
+  const ENTRIES = [
+    { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
+    { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
+  ]
+
+  function navigateToReview(container, deps) {
+    deps.parsePhrase.mockReturnValue(PARSED_OK)
+    deps.buildEntries.mockReturnValue(ENTRIES)
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireTranscript('test')
+  }
+
+  it('affiche le bouton "Retour à l\'accueil" une fois toutes les fiches envoyées avec succès', async () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
+    navigateToReview(container, deps)
+
+    container.querySelector('#validate-btn').click()
+
+    await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
+
+    expect(deps.submitEntry).toHaveBeenCalledTimes(2)
+    expect(deps.sessionStore.addEntry).toHaveBeenCalledTimes(2)
+  })
+
+  it('affiche le bouton "Relancer" pour les fiches échouées', async () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn().mockResolvedValue({ success: false, error: 'network_error' })
+    navigateToReview(container, deps)
+
+    container.querySelector('#validate-btn').click()
+
+    await vi.waitFor(() => expect(container.querySelector('.retry-entry-btn')).not.toBeNull())
+
+    expect(container.querySelector('.retry-entry-btn')).not.toBeNull()
+    expect(container.querySelector('#back-btn')).not.toBeNull()
+    expect(deps.sessionStore.addEntry).not.toHaveBeenCalled()
+  })
+
+  it('relance une fiche échouée et la marque comme réussie', async () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn()
+      .mockResolvedValueOnce({ success: false, error: 'network_error' })
+      .mockResolvedValueOnce({ success: true })
+      .mockResolvedValue({ success: true })
+    navigateToReview(container, deps)
+
+    container.querySelector('#validate-btn').click()
+    await vi.waitFor(() => expect(container.querySelector('.retry-entry-btn')).not.toBeNull())
+
+    container.querySelector('.retry-entry-btn').click()
+    await vi.waitFor(() => expect(container.querySelector('.retry-entry-btn')).toBeNull())
+
+    expect(deps.sessionStore.addEntry).toHaveBeenCalledTimes(2)
+  })
+
+  it('déclenche la notification quand addEntry retourne shouldNotify=true', async () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
+    deps.sessionStore.addEntry = vi.fn().mockReturnValue({ count: 10, shouldNotify: true })
+    navigateToReview(container, deps)
+
+    container.querySelector('#validate-btn').click()
+    await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
+
+    expect(deps.notifier.notify).toHaveBeenCalledWith('10 fiches enregistrées')
+  })
+
+  it('retourne à l\'écran repos en cliquant sur "Retour à l\'accueil"', async () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
+    navigateToReview(container, deps)
+
+    container.querySelector('#validate-btn').click()
+    await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
+    container.querySelector('#back-btn').click()
+
+    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
+  })
+})
