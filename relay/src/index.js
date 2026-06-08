@@ -31,7 +31,7 @@ export default {
       } catch {
         return jsonResponse({ error: 'bad_request' }, 400)
       }
-      const { subject, text } = payload
+      const { subject, text, html } = payload
       if (!subject || !text) {
         return jsonResponse({ error: 'bad_request' }, 400)
       }
@@ -40,6 +40,7 @@ export default {
         to: env.CLIENT_RECAP_EMAIL,
         subject,
         text,
+        html,
       })
       return jsonResponse(result, result.success ? 200 : 502)
     }
