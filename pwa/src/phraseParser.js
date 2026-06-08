@@ -112,3 +112,8 @@ export function parsePhrase(phrase) {
 
   return { ok: true, date, count, sexe, trancheAge, departement }
 }
+
+export function buildEntries(parsed) {
+  const { date, count, sexe, trancheAge, departement } = parsed
+  return Array.from({ length: count }, () => ({ date, sexe, trancheAge, departement }))
+}

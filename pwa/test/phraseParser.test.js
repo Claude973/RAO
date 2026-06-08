@@ -6,6 +6,7 @@ import {
   extractTrancheAge,
   extractDepartement,
   parsePhrase,
+  buildEntries,
 } from '../src/phraseParser.js'
 
 describe('extractDate', () => {
@@ -149,5 +150,40 @@ describe('parsePhrase', () => {
       ok: false,
       missingFields: ['date', 'count', 'sexe', 'trancheAge', 'departement'],
     })
+  })
+})
+
+describe('buildEntries', () => {
+  it('génère une fiche par personne à partir d\'une analyse réussie', () => {
+    const parsed = {
+      ok: true,
+      date: '2026-06-08',
+      count: 4,
+      sexe: 'Féminin',
+      trancheAge: '6 - 10 ans',
+      departement: '69',
+    }
+
+    expect(buildEntries(parsed)).toEqual([
+      { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
+      { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
+      { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
+      { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
+    ])
+  })
+
+  it('génère une seule fiche quand count vaut 1', () => {
+    const parsed = {
+      ok: true,
+      date: '2026-06-08',
+      count: 1,
+      sexe: 'Masculin',
+      trancheAge: '19 - 25 ans',
+      departement: '08',
+    }
+
+    expect(buildEntries(parsed)).toEqual([
+      { date: '2026-06-08', sexe: 'Masculin', trancheAge: '19 - 25 ans', departement: '08' },
+    ])
   })
 })
