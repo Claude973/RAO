@@ -1,7 +1,0 @@
-
- ⛅️ wrangler 4.98.0
-───────────────────
-Successfully created tail, expires at 2026-06-08T20:57:19Z
-Connected to rao-relay, waiting for logs...
-POST https://rao-relay.claudegermain1.workers.dev/submit-entry - Ok @ 08/06/2026 16:57:22
-  (log) DEBUG raw response: 200 <textarea>{&quot;type&quot;:&quot;error&quot;,&quot;error&quot;:{&quot;enabled&quot;:true,&quot;title&quot;:&quot;Une erreur est survenue&quot;,&quot;content&quot;:&quot;Veuillez patienter un instant avant de soumettre le formulaire.&quot;}}</textarea>
