@@ -11,13 +11,16 @@ function makeContainer() {
 function createFakeSpeechCapture() {
   let transcriptHandler = null
   let errorHandler = null
+  let endHandler = null
   return {
     start: vi.fn(),
     stop: vi.fn(),
     onTranscript: (h) => { transcriptHandler = h },
     onError: (h) => { errorHandler = h },
+    onEnd: (h) => { endHandler = h },
     _fireTranscript: (text) => transcriptHandler?.(text),
     _fireError: (error) => errorHandler?.(error),
+    _fireEnd: () => endHandler?.(),
   }
 }
 
@@ -274,5 +277,41 @@ describe('createDicteeScreen — envoi', () => {
     container.querySelector('#back-btn').click()
 
     expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
+  })
+})
+
+describe('createDicteeScreen — comportement iOS (transcript pendant enregistrement)', () => {
+  it('traite automatiquement la transcription reçue pendant l\'enregistrement', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.parsePhrase.mockReturnValue({
+      ok: true,
+      date: '2026-06-09',
+      count: 1,
+      sexe: 'Masculin',
+      trancheAge: '11 - 15 ans',
+      departement: '69',
+    })
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireTranscript('un garçon onze quinze ans département soixante-neuf')
+
+    expect(deps.speechCapture.stop).toHaveBeenCalled()
+    expect(container.querySelector('.review-form')).not.toBeNull()
+    expect(container.querySelector('#f-date').value).toBe('2026-06-09')
+  })
+
+  it('affiche une erreur si onEnd se déclenche sans résultat (état processing)', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireEnd()
+
+    expect(container.querySelector('.error-msg')).not.toBeNull()
+    expect(container.querySelector('.error-msg').textContent).toContain('sans résultat')
   })
 })
