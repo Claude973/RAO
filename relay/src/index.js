@@ -16,6 +16,10 @@ export default {
       } catch {
         return jsonResponse({ error: 'bad_request' }, 400)
       }
+      const { date, sexe, trancheAge, departement } = entry ?? {}
+      if (!date || !sexe || !trancheAge || !departement) {
+        return jsonResponse({ error: 'bad_request' }, 400)
+      }
       const result = await submitEntry(entry)
       return jsonResponse(result, result.success ? 200 : 502)
     }

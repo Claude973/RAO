@@ -44,10 +44,22 @@ describe('worker fetch handler', () => {
   it('POST /submit-entry renvoie 502 quand submitEntry échoue', async () => {
     submitEntryMock.mockResolvedValue({ success: false, error: 'http_500' })
 
-    const response = await worker.fetch(postJson('/submit-entry', {}), ENV)
+    const entry = { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' }
+    const response = await worker.fetch(postJson('/submit-entry', entry), ENV)
 
     expect(response.status).toBe(502)
     expect(await response.json()).toEqual({ success: false, error: 'http_500' })
+  })
+
+  it('renvoie 400 pour /submit-entry si un champ de la fiche est manquant', async () => {
+    const response = await worker.fetch(
+      postJson('/submit-entry', { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans' }),
+      ENV
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'bad_request' })
+    expect(submitEntryMock).not.toHaveBeenCalled()
   })
 
   it('POST /send-recap transmet objet/corps et les identifiants de l\'environnement à sendRecapEmail', async () => {
