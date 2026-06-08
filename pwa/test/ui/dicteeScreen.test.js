@@ -121,3 +121,61 @@ describe('createDicteeScreen — erreur d\'analyse (parsePhrase)', () => {
     expect(container.querySelector('.error-msg').textContent).toContain("la tranche d'âge")
   })
 })
+
+describe('createDicteeScreen — revue/confirmation', () => {
+  const PARSED_OK = {
+    ok: true,
+    date: '2026-06-08',
+    count: 3,
+    sexe: 'Féminin',
+    trancheAge: '6 - 10 ans',
+    departement: '69',
+  }
+
+  function navigateToReview(container, deps) {
+    deps.parsePhrase.mockReturnValue(PARSED_OK)
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireTranscript('test')
+  }
+
+  it('affiche les champs pré-remplis avec les valeurs extraites', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    navigateToReview(container, deps)
+
+    expect(container.querySelector('#f-date').value).toBe('2026-06-08')
+    expect(container.querySelector('#f-sexe').value).toBe('Féminin')
+    expect(container.querySelector('#f-tranche').value).toBe('6 - 10 ans')
+    expect(container.querySelector('#f-dept').value).toBe('69')
+    expect(container.querySelector('#f-count').value).toBe('3')
+  })
+
+  it('affiche les boutons "Valider" et "Redicter depuis le début"', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    navigateToReview(container, deps)
+
+    expect(container.querySelector('#validate-btn')).not.toBeNull()
+    expect(container.querySelector('#retry-btn')).not.toBeNull()
+  })
+
+  it('le select tranche d\'âge propose les 5 tranches dans le bon ordre', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    navigateToReview(container, deps)
+
+    const options = [...container.querySelectorAll('#f-tranche option')].map((o) => o.value)
+    expect(options).toEqual(['6 - 10 ans', '11 - 15 ans', '16 - 18 ans', '19 - 25 ans', '+25 ans'])
+  })
+
+  it('retourne à l\'écran repos en cliquant sur "Redicter depuis le début"', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    navigateToReview(container, deps)
+    container.querySelector('#retry-btn').click()
+
+    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
+  })
+})
