@@ -18,6 +18,6 @@ export async function submitEntry(entry) {
   return postJson('/submit-entry', entry)
 }
 
-export async function sendRecap({ subject, text }) {
-  return postJson('/send-recap', { subject, text })
+export async function sendRecap({ subject, text, html }) {
+  return postJson('/send-recap', { subject, text, html })
 }
