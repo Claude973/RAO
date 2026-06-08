@@ -79,3 +79,45 @@ describe('createDicteeScreen — enregistrement', () => {
     expect(container.querySelector('#processing-msg')).not.toBeNull()
   })
 })
+
+describe('createDicteeScreen — erreur de reconnaissance vocale', () => {
+  it('affiche un message d\'erreur et le bouton "Redicter" en cas d\'erreur vocale', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireError('no-speech')
+
+    expect(container.querySelector('.error-msg').textContent).toContain('Erreur de reconnaissance vocale')
+    expect(container.querySelector('#retry-btn')).not.toBeNull()
+  })
+
+  it('retourne à l\'écran repos en cliquant sur "Redicter"', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireError('no-speech')
+    container.querySelector('#retry-btn').click()
+
+    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
+  })
+})
+
+describe('createDicteeScreen — erreur d\'analyse (parsePhrase)', () => {
+  it('affiche les champs manquants quand parsePhrase retourne ok=false', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.parsePhrase.mockReturnValue({ ok: false, missingFields: ['date', 'trancheAge'] })
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireTranscript('deux filles département soixante-neuf')
+
+    expect(container.querySelector('.error-msg').textContent).toContain('la date')
+    expect(container.querySelector('.error-msg').textContent).toContain("la tranche d'âge")
+  })
+})
