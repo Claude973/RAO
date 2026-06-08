@@ -1,0 +1,19 @@
+{
+  "name": "rao-relay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.8",
+    "wrangler": "^4.98.0"
+  },
+  "dependencies": {
+    "worker-mailer": "^1.2.1"
+  }
+}
