@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractDate, extractSexe, extractCount } from '../src/phraseParser.js'
+import { extractDate, extractSexe, extractCount, extractTrancheAge } from '../src/phraseParser.js'
 
 describe('extractDate', () => {
   it('extrait une date au format "le 8 juin 2026"', () => {
@@ -57,5 +57,34 @@ describe('extractCount', () => {
 
   it('renvoie null si aucun nombre n\'est trouvé avant le mot clé', () => {
     expect(extractCount('des filles, entre 6 et 10 ans')).toBeNull()
+  })
+})
+
+describe('extractTrancheAge', () => {
+  it('reconnaît "entre 6 et 10 ans"', () => {
+    expect(extractTrancheAge('quatre filles, entre 6 et 10 ans, département 69')).toBe('6 - 10 ans')
+  })
+
+  it('reconnaît "entre 11 et 15 ans"', () => {
+    expect(extractTrancheAge('deux garçons, entre 11 et 15 ans')).toBe('11 - 15 ans')
+  })
+
+  it('reconnaît "entre 16 et 18 ans"', () => {
+    expect(extractTrancheAge('une personne, entre 16 et 18 ans')).toBe('16 - 18 ans')
+  })
+
+  it('reconnaît "entre 19 et 25 ans"', () => {
+    expect(extractTrancheAge('trois personnes, entre 19 et 25 ans')).toBe('19 - 25 ans')
+  })
+
+  it('reconnaît les formulations de "plus de 25 ans"', () => {
+    expect(extractTrancheAge('une personne, plus de 25 ans')).toBe('+25 ans')
+    expect(extractTrancheAge('une personne, +25 ans')).toBe('+25 ans')
+    expect(extractTrancheAge('une personne, 25 ans et plus')).toBe('+25 ans')
+  })
+
+  it('renvoie null si aucune tranche d\'âge connue n\'est trouvée', () => {
+    expect(extractTrancheAge('quatre filles, département 69')).toBeNull()
+    expect(extractTrancheAge('quatre filles, entre 30 et 40 ans')).toBeNull()
   })
 })

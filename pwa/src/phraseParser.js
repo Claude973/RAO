@@ -51,3 +51,28 @@ export function extractCount(phrase) {
 
   return wordToNumber(raw)
 }
+
+const TRANCHE_RANGES = [
+  { min: 6, max: 10, label: '6 - 10 ans' },
+  { min: 11, max: 15, label: '11 - 15 ans' },
+  { min: 16, max: 18, label: '16 - 18 ans' },
+  { min: 19, max: 25, label: '19 - 25 ans' },
+]
+
+export function extractTrancheAge(phrase) {
+  const lower = phrase.toLowerCase()
+
+  if (/plus de 25 ans|\+\s*25 ans|25 ans et plus/.test(lower)) {
+    return '+25 ans'
+  }
+
+  const rangeMatch = lower.match(/entre\s+(\d+)\s+et\s+(\d+)\s+ans/)
+  if (rangeMatch) {
+    const min = parseInt(rangeMatch[1], 10)
+    const max = parseInt(rangeMatch[2], 10)
+    const found = TRANCHE_RANGES.find((range) => range.min === min && range.max === max)
+    if (found) return found.label
+  }
+
+  return null
+}
