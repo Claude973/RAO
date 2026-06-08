@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractDate, extractSexe, extractCount, extractTrancheAge } from '../src/phraseParser.js'
+import { extractDate, extractSexe, extractCount, extractTrancheAge, extractDepartement } from '../src/phraseParser.js'
 
 describe('extractDate', () => {
   it('extrait une date au format "le 8 juin 2026"', () => {
@@ -86,5 +86,28 @@ describe('extractTrancheAge', () => {
   it('renvoie null si aucune tranche d\'âge connue n\'est trouvée', () => {
     expect(extractTrancheAge('quatre filles, département 69')).toBeNull()
     expect(extractTrancheAge('quatre filles, entre 30 et 40 ans')).toBeNull()
+  })
+})
+
+describe('extractDepartement', () => {
+  it('convertit un département énoncé en toutes lettres ("soixante-neuf" -> "69")', () => {
+    expect(extractDepartement('département soixante-neuf')).toBe('69')
+  })
+
+  it('convertit un département énoncé en toutes lettres à un chiffre, avec zéro initial ("neuf" -> "09")', () => {
+    expect(extractDepartement('département neuf')).toBe('09')
+  })
+
+  it('accepte un département dicté en chiffres, avec zéro initial si besoin', () => {
+    expect(extractDepartement('département 69')).toBe('69')
+    expect(extractDepartement('département 8')).toBe('08')
+  })
+
+  it('convertit un département composé ("quatre-vingt-treize" -> "93")', () => {
+    expect(extractDepartement('département quatre-vingt-treize')).toBe('93')
+  })
+
+  it('renvoie null si aucun département n\'est trouvé', () => {
+    expect(extractDepartement('quatre filles, entre 6 et 10 ans')).toBeNull()
   })
 })

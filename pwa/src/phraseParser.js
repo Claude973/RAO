@@ -76,3 +76,18 @@ export function extractTrancheAge(phrase) {
 
   return null
 }
+
+export function extractDepartement(phrase) {
+  const lower = phrase.toLowerCase()
+
+  const digitsMatch = lower.match(/département\s+(\d{1,3})/)
+  if (digitsMatch) return digitsMatch[1].padStart(2, '0')
+
+  const wordsMatch = lower.match(/département\s+([a-zà-öø-ÿ]+(?:[\s-][a-zà-öø-ÿ]+){0,3})/)
+  if (wordsMatch) {
+    const value = wordToNumber(wordsMatch[1])
+    if (value !== null) return String(value).padStart(2, '0')
+  }
+
+  return null
+}
