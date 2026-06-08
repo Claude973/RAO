@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractDate } from '../src/phraseParser.js'
+import { extractDate, extractSexe } from '../src/phraseParser.js'
 
 describe('extractDate', () => {
   it('extrait une date au format "le 8 juin 2026"', () => {
@@ -16,5 +16,24 @@ describe('extractDate', () => {
 
   it('renvoie null si aucune date n\'est trouvée', () => {
     expect(extractDate('quatre filles, entre 6 et 10 ans, département 69')).toBeNull()
+  })
+})
+
+describe('extractSexe', () => {
+  it('détecte "filles" comme Féminin', () => {
+    expect(extractSexe('quatre filles, entre 6 et 10 ans')).toBe('Féminin')
+  })
+
+  it('détecte "garçons" comme Masculin', () => {
+    expect(extractSexe('deux garçons, entre 11 et 15 ans')).toBe('Masculin')
+  })
+
+  it('détecte "féminin" et "masculin" dictés directement', () => {
+    expect(extractSexe('une personne, féminin, 19-25 ans')).toBe('Féminin')
+    expect(extractSexe('une personne, masculin, 19-25 ans')).toBe('Masculin')
+  })
+
+  it('renvoie null si le sexe n\'est pas détecté', () => {
+    expect(extractSexe('quatre personnes, entre 6 et 10 ans')).toBeNull()
   })
 })

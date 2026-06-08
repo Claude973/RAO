@@ -29,3 +29,12 @@ export function extractDate(phrase) {
 
   return `${year}-${pad2(month)}-${pad2(day)}`
 }
+
+export function extractSexe(phrase) {
+  const lower = phrase.toLowerCase()
+
+  if (/\b(filles?|féminin)\b/.test(lower)) return 'Féminin'
+  if (/\b(garçons?|masculin)\b/.test(lower)) return 'Masculin'
+
+  return null
+}
