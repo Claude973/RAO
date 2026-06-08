@@ -110,4 +110,27 @@ describe('submitEntry', () => {
 
     expect(result).toEqual({ success: false, error: 'Jeton invalide' })
   })
+
+  it('renvoie un échec sans appeler l\'AJAX si le contexte du formulaire est incomplet', async () => {
+    global.fetch = vi.fn()
+    global.fetch.mockResolvedValueOnce(
+      new Response('<html><body><form></form></body></html>', {
+        status: 200,
+        headers: { 'set-cookie': 'quform_session_test=abc123; path=/; secure; httponly' },
+      })
+    )
+
+    const result = await submitEntry(VALID_ENTRY)
+
+    expect(result).toEqual({ success: false, error: 'form_context_unavailable' })
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('renvoie un échec si la réponse du serveur n\'est pas du JSON valide', async () => {
+    mockFormPageThenAjaxResponse(new Response('<html>Erreur inattendue</html>', { status: 200 }))
+
+    const result = await submitEntry(VALID_ENTRY)
+
+    expect(result).toEqual({ success: false, error: 'invalid_response' })
+  })
 })

@@ -20,6 +20,10 @@ export async function fetchFormContext(formUrl) {
 export async function submitEntry(entry) {
   const context = await fetchFormContext(FORM_URL)
 
+  if (!context.csrfToken || !context.formUid || !context.quformLoaded || !context.postId) {
+    return { success: false, error: 'form_context_unavailable' }
+  }
+
   const body = new FormData()
   body.append('action', 'quform')
   body.append('quform_form_id', '9')
@@ -51,7 +55,13 @@ export async function submitEntry(entry) {
     return { success: false, error: `http_${response.status}` }
   }
 
-  const result = await response.json()
+  let result
+  try {
+    result = await response.json()
+  } catch {
+    return { success: false, error: 'invalid_response' }
+  }
+
   if (result && result.success) {
     return { success: true }
   }
