@@ -91,3 +91,24 @@ export function extractDepartement(phrase) {
 
   return null
 }
+
+export function parsePhrase(phrase) {
+  const date = extractDate(phrase)
+  const count = extractCount(phrase)
+  const sexe = extractSexe(phrase)
+  const trancheAge = extractTrancheAge(phrase)
+  const departement = extractDepartement(phrase)
+
+  const missingFields = []
+  if (!date) missingFields.push('date')
+  if (!count) missingFields.push('count')
+  if (!sexe) missingFields.push('sexe')
+  if (!trancheAge) missingFields.push('trancheAge')
+  if (!departement) missingFields.push('departement')
+
+  if (missingFields.length > 0) {
+    return { ok: false, missingFields }
+  }
+
+  return { ok: true, date, count, sexe, trancheAge, departement }
+}

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { extractDate, extractSexe, extractCount, extractTrancheAge, extractDepartement } from '../src/phraseParser.js'
+import {
+  extractDate,
+  extractSexe,
+  extractCount,
+  extractTrancheAge,
+  extractDepartement,
+  parsePhrase,
+} from '../src/phraseParser.js'
 
 describe('extractDate', () => {
   it('extrait une date au format "le 8 juin 2026"', () => {
@@ -109,5 +116,38 @@ describe('extractDepartement', () => {
 
   it('renvoie null si aucun département n\'est trouvé', () => {
     expect(extractDepartement('quatre filles, entre 6 et 10 ans')).toBeNull()
+  })
+})
+
+describe('parsePhrase', () => {
+  it('renvoie ok:true et les champs extraits quand la phrase est complète', () => {
+    const result = parsePhrase('Le 8 juin 2026, quatre filles, entre 6 et 10 ans, département soixante-neuf')
+
+    expect(result).toEqual({
+      ok: true,
+      date: '2026-06-08',
+      count: 4,
+      sexe: 'Féminin',
+      trancheAge: '6 - 10 ans',
+      departement: '69',
+    })
+  })
+
+  it('renvoie ok:false et la liste des champs manquants quand la phrase est incomplète', () => {
+    const result = parsePhrase('quatre personnes, département 69')
+
+    expect(result).toEqual({
+      ok: false,
+      missingFields: ['date', 'sexe', 'trancheAge'],
+    })
+  })
+
+  it('renvoie tous les champs comme manquants pour une phrase vide', () => {
+    const result = parsePhrase('')
+
+    expect(result).toEqual({
+      ok: false,
+      missingFields: ['date', 'count', 'sexe', 'trancheAge', 'departement'],
+    })
   })
 })
