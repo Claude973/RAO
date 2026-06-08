@@ -87,3 +87,31 @@ describe('createSessionStore — persistance locale', () => {
     expect(JSON.parse(storage.getItem('rao-session'))).toEqual([])
   })
 })
+
+describe('createSessionStore — résumé par sexe / tranche d\'âge / département', () => {
+  it('calcule la répartition des fiches enregistrées', () => {
+    const store = createSessionStore(createFakeStorage())
+
+    store.addEntry({ date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' })
+    store.addEntry({ date: '2026-06-08', sexe: 'Féminin', trancheAge: '11 - 15 ans', departement: '69' })
+    store.addEntry({ date: '2026-06-08', sexe: 'Masculin', trancheAge: '6 - 10 ans', departement: '08' })
+
+    expect(store.getSummary()).toEqual({
+      total: 3,
+      bySexe: { Féminin: 2, Masculin: 1 },
+      byTrancheAge: { '6 - 10 ans': 2, '11 - 15 ans': 1 },
+      byDepartement: { '69': 2, '08': 1 },
+    })
+  })
+
+  it('renvoie un résumé vide quand aucune fiche n\'a été enregistrée', () => {
+    const store = createSessionStore(createFakeStorage())
+
+    expect(store.getSummary()).toEqual({
+      total: 0,
+      bySexe: {},
+      byTrancheAge: {},
+      byDepartement: {},
+    })
+  })
+})

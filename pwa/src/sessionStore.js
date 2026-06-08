@@ -41,5 +41,17 @@ export function createSessionStore(storage) {
     persist()
   }
 
-  return { addEntry, getCount, getEntries, reset }
+  function getSummary() {
+    const summary = { total: entries.length, bySexe: {}, byTrancheAge: {}, byDepartement: {} }
+
+    for (const entry of entries) {
+      summary.bySexe[entry.sexe] = (summary.bySexe[entry.sexe] ?? 0) + 1
+      summary.byTrancheAge[entry.trancheAge] = (summary.byTrancheAge[entry.trancheAge] ?? 0) + 1
+      summary.byDepartement[entry.departement] = (summary.byDepartement[entry.departement] ?? 0) + 1
+    }
+
+    return summary
+  }
+
+  return { addEntry, getCount, getEntries, getSummary, reset }
 }
