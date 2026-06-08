@@ -3,6 +3,7 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
 
   speechCapture.onTranscript(handleTranscript)
   speechCapture.onError(handleSpeechError)
+  speechCapture.onEnd(handleSpeechEnd)
 
   function renderIdle() {
     state = 'idle'
@@ -36,8 +37,20 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
     renderError(`Erreur de reconnaissance vocale : ${error} — Peux-tu redicter ?`)
   }
 
+  function handleSpeechEnd() {
+    if (state === 'processing') {
+      renderError("La reconnaissance vocale s'est arrêtée sans résultat — réessaie")
+    }
+  }
+
   function handleTranscript(transcript) {
-    if (state !== 'processing') return
+    if (state === 'recording') {
+      state = 'processing'
+      container.innerHTML = `<div id="processing-msg">Analyse en cours...</div>`
+      speechCapture.stop()
+    } else if (state !== 'processing') {
+      return
+    }
     const parsed = parsePhrase(transcript)
     if (!parsed.ok) {
       const fieldLabels = {

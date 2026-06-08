@@ -6,6 +6,7 @@ export function createSpeechCapture(SpeechRecognitionImpl) {
 
   let transcriptHandler = null
   let errorHandler = null
+  let endHandler = null
 
   recognition.onresult = (event) => {
     const transcript = Array.from(event.results)
@@ -18,6 +19,10 @@ export function createSpeechCapture(SpeechRecognitionImpl) {
     errorHandler?.(event.error)
   }
 
+  recognition.onend = () => {
+    endHandler?.()
+  }
+
   return {
     start: () => recognition.start(),
     stop: () => recognition.stop(),
@@ -26,6 +31,9 @@ export function createSpeechCapture(SpeechRecognitionImpl) {
     },
     onError: (handler) => {
       errorHandler = handler
+    },
+    onEnd: (handler) => {
+      endHandler = handler
     },
   }
 }
