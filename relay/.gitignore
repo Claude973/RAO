@@ -1,0 +1,4 @@
+node_modules/
+.wrangler/
+.dev.vars
+tail_output.log

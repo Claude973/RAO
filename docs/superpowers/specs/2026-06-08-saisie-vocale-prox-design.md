@@ -1,7 +1,7 @@
 # RAO — Application de saisie vocale assistée pour le questionnaire "Jeunes PROX'"
 
 Date : 2026-06-08
-Statut : en cours de validation
+Statut : validé
 
 ## 1. Contexte
 
