@@ -78,4 +78,42 @@ describe('worker fetch handler', () => {
 
     expect(response.status).toBe(404)
   })
+
+  it('renvoie 400 pour /submit-entry si le corps n\'est pas du JSON valide', async () => {
+    const response = await worker.fetch(
+      new Request('https://relay.example.com/submit-entry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'ceci n\'est pas du JSON',
+      }),
+      ENV
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'bad_request' })
+    expect(submitEntryMock).not.toHaveBeenCalled()
+  })
+
+  it('renvoie 400 pour /send-recap si le corps n\'est pas du JSON valide', async () => {
+    const response = await worker.fetch(
+      new Request('https://relay.example.com/send-recap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'ceci n\'est pas du JSON',
+      }),
+      ENV
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'bad_request' })
+    expect(sendRecapEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('renvoie 400 pour /send-recap si subject ou text est manquant', async () => {
+    const response = await worker.fetch(postJson('/send-recap', { subject: 'Sans corps' }), ENV)
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'bad_request' })
+    expect(sendRecapEmailMock).not.toHaveBeenCalled()
+  })
 })

@@ -10,13 +10,27 @@ export default {
     }
 
     if (url.pathname === '/submit-entry') {
-      const entry = await request.json()
+      let entry
+      try {
+        entry = await request.json()
+      } catch {
+        return jsonResponse({ error: 'bad_request' }, 400)
+      }
       const result = await submitEntry(entry)
       return jsonResponse(result, result.success ? 200 : 502)
     }
 
     if (url.pathname === '/send-recap') {
-      const { subject, text } = await request.json()
+      let payload
+      try {
+        payload = await request.json()
+      } catch {
+        return jsonResponse({ error: 'bad_request' }, 400)
+      }
+      const { subject, text } = payload
+      if (!subject || !text) {
+        return jsonResponse({ error: 'bad_request' }, 400)
+      }
       const result = await sendRecapEmail({
         credentials: { username: env.GMAIL_USERNAME, password: env.GMAIL_APP_PASSWORD },
         to: env.CLIENT_RECAP_EMAIL,
