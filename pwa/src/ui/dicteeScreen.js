@@ -1,5 +1,6 @@
 export function createDicteeScreen(container, { speechCapture, parsePhrase, buildEntries, submitEntry, sessionStore, notifier }) {
   let state = 'idle'
+  let bufferedTranscript = null
 
   speechCapture.onTranscript(handleTranscript)
   speechCapture.onError(handleSpeechError)
@@ -7,6 +8,7 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
 
   function renderIdle() {
     state = 'idle'
+    bufferedTranscript = null
     const count = sessionStore.getCount()
     container.innerHTML = `
       <div class="session-counter">${count} fiches enregistrées</div>
@@ -30,6 +32,11 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
     state = 'processing'
     container.innerHTML = `<div id="processing-msg">Analyse en cours...</div>`
     speechCapture.stop()
+    if (bufferedTranscript !== null) {
+      const t = bufferedTranscript
+      bufferedTranscript = null
+      processTranscript(t)
+    }
   }
 
   function handleSpeechError(error) {
@@ -45,12 +52,14 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
 
   function handleTranscript(transcript) {
     if (state === 'recording') {
-      state = 'processing'
-      container.innerHTML = `<div id="processing-msg">Analyse en cours...</div>`
-      speechCapture.stop()
-    } else if (state !== 'processing') {
+      bufferedTranscript = transcript
       return
     }
+    if (state !== 'processing') return
+    processTranscript(transcript)
+  }
+
+  function processTranscript(transcript) {
     const parsed = parsePhrase(transcript)
     if (!parsed.ok) {
       const fieldLabels = {
