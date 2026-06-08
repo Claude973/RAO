@@ -56,13 +56,21 @@ function mockFormPageThenAjaxResponse(ajaxResponse) {
   global.fetch.mockResolvedValueOnce(ajaxResponse)
 }
 
+async function runSubmitEntry(entry) {
+  vi.useFakeTimers()
+  const resultPromise = submitEntry(entry)
+  await vi.runAllTimersAsync()
+  vi.useRealTimers()
+  return resultPromise
+}
+
 describe('submitEntry', () => {
   it('poste la fiche avec le jeton frais, les réponses fixes, et le champ piège vide', async () => {
     mockFormPageThenAjaxResponse(
       new Response(JSON.stringify({ success: true }), { status: 200 })
     )
 
-    const result = await submitEntry(VALID_ENTRY)
+    const result = await runSubmitEntry(VALID_ENTRY)
 
     expect(result).toEqual({ success: true })
     expect(global.fetch).toHaveBeenCalledTimes(2)
@@ -96,7 +104,7 @@ describe('submitEntry', () => {
   it('renvoie un échec si le serveur répond par une erreur HTTP', async () => {
     mockFormPageThenAjaxResponse(new Response('Erreur serveur', { status: 500 }))
 
-    const result = await submitEntry(VALID_ENTRY)
+    const result = await runSubmitEntry(VALID_ENTRY)
 
     expect(result).toEqual({ success: false, error: 'http_500' })
   })
@@ -106,7 +114,7 @@ describe('submitEntry', () => {
       new Response(JSON.stringify({ success: false, message: 'Jeton invalide' }), { status: 200 })
     )
 
-    const result = await submitEntry(VALID_ENTRY)
+    const result = await runSubmitEntry(VALID_ENTRY)
 
     expect(result).toEqual({ success: false, error: 'Jeton invalide' })
   })
@@ -129,7 +137,7 @@ describe('submitEntry', () => {
   it('renvoie un échec si la réponse du serveur n\'est pas du JSON valide', async () => {
     mockFormPageThenAjaxResponse(new Response('<html>Erreur inattendue</html>', { status: 200 }))
 
-    const result = await submitEntry(VALID_ENTRY)
+    const result = await runSubmitEntry(VALID_ENTRY)
 
     expect(result).toEqual({ success: false, error: 'invalid_response' })
   })

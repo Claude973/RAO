@@ -3,6 +3,15 @@ import { FIXED_ANSWERS } from './fixedAnswers.js'
 
 const FORM_URL = 'https://raid-aventure.org/questionnaire-jeunes-prox/'
 
+// Le formulaire rejette les soumissions trop rapides après le chargement de
+// la page (protection anti-spam de Quform) avec le message "Veuillez
+// patienter un instant avant de soumettre le formulaire."
+const MIN_FILL_DELAY_MS = 6000
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function fetchFormContext(formUrl) {
   const response = await fetch(formUrl)
   const html = await response.text()
@@ -22,6 +31,8 @@ export async function submitEntry(entry) {
   if (!context.csrfToken || !context.formUid || !context.quformLoaded || !context.postId) {
     return { success: false, error: 'form_context_unavailable' }
   }
+
+  await wait(MIN_FILL_DELAY_MS)
 
   const body = new FormData()
   body.append('quform_form_id', '9')
