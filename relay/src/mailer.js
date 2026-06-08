@@ -1,6 +1,6 @@
 import { WorkerMailer } from 'worker-mailer'
 
-export async function sendRecapEmail({ credentials, to, subject, text }) {
+export async function sendRecapEmail({ credentials, to, subject, text, html }) {
   const mailer = await WorkerMailer.connect({
     credentials,
     authType: 'plain',
@@ -14,6 +14,7 @@ export async function sendRecapEmail({ credentials, to, subject, text }) {
     to: { email: to },
     subject,
     text,
+    html,
   })
 
   return { success: true }

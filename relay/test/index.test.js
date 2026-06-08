@@ -79,6 +79,28 @@ describe('worker fetch handler', () => {
     expect(response.status).toBe(200)
   })
 
+  it('POST /send-recap transmet le contenu HTML optionnel à sendRecapEmail', async () => {
+    sendRecapEmailMock.mockResolvedValue({ success: true })
+
+    const response = await worker.fetch(
+      postJson('/send-recap', {
+        subject: 'Récapitulatif RAO 8 juin 2026',
+        text: 'Total : 12 personnes.',
+        html: '<table><tr><td>Féminin</td></tr></table>',
+      }),
+      ENV
+    )
+
+    expect(sendRecapEmailMock).toHaveBeenCalledWith({
+      credentials: { username: 'rao.app@gmail.com', password: 'mot-de-passe-application' },
+      to: 'claudegermain1@gmail.com',
+      subject: 'Récapitulatif RAO 8 juin 2026',
+      text: 'Total : 12 personnes.',
+      html: '<table><tr><td>Féminin</td></tr></table>',
+    })
+    expect(response.status).toBe(200)
+  })
+
   it('renvoie 405 pour une méthode autre que POST', async () => {
     const response = await worker.fetch(new Request('https://relay.example.com/submit-entry'), ENV)
 

@@ -74,4 +74,21 @@ describe('sendRecap', () => {
 
     expect(result).toEqual({ success: false, error: 'invalid_response' })
   })
+
+  it('transmet le contenu HTML quand il est fourni', async () => {
+    global.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }))
+
+    const payload = {
+      subject: 'Récapitulatif RAO 8 juin 2026',
+      text: 'Total : 12 personnes.',
+      html: '<table><tr><td>Féminin</td></tr></table>',
+    }
+    await sendRecap(payload)
+
+    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/send-recap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  })
 })
