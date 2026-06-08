@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { submitEntry } from '../src/relayClient.js'
+import { submitEntry, sendRecap } from '../src/relayClient.js'
 
 const RELAY_URL = 'https://rao-relay.claudegermain1.workers.dev'
 
@@ -37,6 +37,40 @@ describe('submitEntry', () => {
     global.fetch.mockResolvedValueOnce(new Response('<html>Erreur</html>', { status: 200 }))
 
     const result = await submitEntry(ENTRY)
+
+    expect(result).toEqual({ success: false, error: 'invalid_response' })
+  })
+})
+
+describe('sendRecap', () => {
+  it('poste le sujet et le corps au relais et renvoie le résultat en cas de succès', async () => {
+    global.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }))
+
+    const payload = { subject: 'Récapitulatif RAO 8 juin 2026', text: 'Total : 12 personnes.' }
+    const result = await sendRecap(payload)
+
+    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/send-recap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    expect(result).toEqual({ success: true })
+  })
+
+  it('renvoie l\'échec rapporté par le relais', async () => {
+    global.fetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, error: 'http_502' }), { status: 502 })
+    )
+
+    const result = await sendRecap({ subject: 'Sujet', text: 'Corps' })
+
+    expect(result).toEqual({ success: false, error: 'http_502' })
+  })
+
+  it('renvoie un échec invalid_response si la réponse n\'est pas du JSON valide', async () => {
+    global.fetch.mockResolvedValueOnce(new Response('<html>Erreur</html>', { status: 200 }))
+
+    const result = await sendRecap({ subject: 'Sujet', text: 'Corps' })
 
     expect(result).toEqual({ success: false, error: 'invalid_response' })
   })
