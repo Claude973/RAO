@@ -136,7 +136,9 @@ describe('createDicteeScreen — envoi', () => {
 
     fillAndSubmit(container, { filles: { '6 - 10 ans': 2 } })
 
-    await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
+    await vi.waitFor(() =>
+      expect(container.querySelector('#back-btn').textContent).toBe("Retour à l'accueil")
+    )
 
     expect(deps.submitEntry).toHaveBeenCalledTimes(2)
     expect(deps.sessionStore.addEntry).toHaveBeenCalledTimes(2)

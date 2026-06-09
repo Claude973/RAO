@@ -15,11 +15,11 @@ describe('submitEntry', () => {
 
     const result = await submitEntry(ENTRY)
 
-    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/submit-entry`, {
+    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/submit-entry`, expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ENTRY),
-    })
+    }))
     expect(result).toEqual({ success: true })
   })
 
@@ -49,11 +49,11 @@ describe('sendRecap', () => {
     const payload = { subject: 'Récapitulatif RAO 8 juin 2026', text: 'Total : 12 personnes.' }
     const result = await sendRecap(payload)
 
-    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/send-recap`, {
+    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/send-recap`, expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    })
+    }))
     expect(result).toEqual({ success: true })
   })
 
@@ -85,10 +85,10 @@ describe('sendRecap', () => {
     }
     await sendRecap(payload)
 
-    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/send-recap`, {
+    expect(global.fetch).toHaveBeenCalledWith(`${RELAY_URL}/send-recap`, expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    })
+    }))
   })
 })

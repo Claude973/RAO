@@ -1,16 +1,24 @@
 const RELAY_URL = 'https://rao-relay.claudegermain1.workers.dev'
 
 async function postJson(path, payload) {
-  const response = await fetch(`${RELAY_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
   try {
-    return await response.json()
-  } catch {
-    return { success: false, error: 'invalid_response' }
+    const response = await fetch(`${RELAY_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+    try {
+      return await response.json()
+    } catch {
+      return { success: false, error: 'invalid_response' }
+    }
+  } catch (error) {
+    clearTimeout(timeout)
+    return { success: false, error: error.name === 'AbortError' ? 'timeout' : 'network_error' }
   }
 }
 

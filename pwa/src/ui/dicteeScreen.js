@@ -79,7 +79,7 @@ export function createDicteeScreen(container, { buildEntries, submitEntry, sessi
             </div>`
             )
             .join('')}
-          ${statuses.every((s) => s !== null) ? `<button id="back-btn">Retour à l'accueil</button>` : ''}
+          <button id="back-btn">${statuses.every((s) => s !== null) ? "Retour à l'accueil" : 'Annuler et retourner'}</button>
         </div>
       `
       statuses.forEach((s, i) => {
