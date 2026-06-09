@@ -1,4 +1,4 @@
-const TRANCHES = ['6 - 10 ans', '11 - 15 ans', '16 - 18 ans', '19 - 25 ans', '+25 ans']
+const TRANCHES = ['6 - 10 ans', '11 - 15 ans', '16 - 18 ans', '19 - 25 ans', '+ de 25 ans']
 
 export function createDicteeScreen(container, { buildEntries, submitEntry, sessionStore, notifier }) {
   function renderForm() {

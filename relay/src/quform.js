@@ -12,6 +12,16 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function decodeHtmlEntities(str) {
+  return str
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
 export async function fetchFormContext(formUrl) {
   const response = await fetch(formUrl)
   const html = await response.text()
@@ -69,13 +79,18 @@ export async function submitEntry(entry) {
 
   let result
   try {
-    result = await response.json()
+    const text = await response.text()
+    // Quform enveloppe sa réponse JSON dans <textarea> pour éviter des bugs de navigateur
+    const match = text.match(/<textarea[^>]*>([\s\S]*?)<\/textarea>/)
+    const jsonStr = match ? decodeHtmlEntities(match[1]) : text
+    result = JSON.parse(jsonStr)
   } catch {
     return { success: false, error: 'invalid_response' }
   }
 
-  if (result && result.success) {
+  if (result?.type === 'success') {
     return { success: true }
   }
-  return { success: false, error: result?.message ?? 'submission_rejected' }
+  const errorDetail = result?.errors ? JSON.stringify(result.errors) : (result?.error?.content ?? result?.message ?? 'submission_rejected')
+  return { success: false, error: errorDetail }
 }

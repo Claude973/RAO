@@ -66,9 +66,9 @@ async function runSubmitEntry(entry) {
 
 describe('submitEntry', () => {
   it('poste la fiche avec le jeton frais, les réponses fixes, et le champ piège vide', async () => {
-    mockFormPageThenAjaxResponse(
-      new Response(JSON.stringify({ success: true }), { status: 200 })
-    )
+    // Quform enveloppe sa réponse AJAX dans <textarea> et encode les entités HTML
+    const quformSuccess = '<textarea>{"type":"success","message":""}</textarea>'
+    mockFormPageThenAjaxResponse(new Response(quformSuccess, { status: 200 }))
 
     const result = await runSubmitEntry(VALID_ENTRY)
 
@@ -97,6 +97,7 @@ describe('submitEntry', () => {
     expect(body.get('quform_9_5')).toBe('Non')
     expect(body.get('quform_9_6')).toBe('Oui')
     expect(body.get('quform_9_7')).toBe('Bon')
+    expect(body.get('quform_9_8')).toBe('Oui')
     expect(body.get('quform_ajax')).toBe('1')
     expect(body.get('quform_removed_upload_uids')).toBe('')
   })
