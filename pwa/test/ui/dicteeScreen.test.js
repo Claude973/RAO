@@ -10,15 +10,18 @@ function makeContainer() {
 
 function createFakeSpeechCapture() {
   let transcriptHandler = null
+  let liveHandler = null
   let errorHandler = null
   let endHandler = null
   return {
     start: vi.fn(),
     stop: vi.fn(),
     onTranscript: (h) => { transcriptHandler = h },
+    onLiveTranscript: (h) => { liveHandler = h },
     onError: (h) => { errorHandler = h },
     onEnd: (h) => { endHandler = h },
     _fireTranscript: (text) => transcriptHandler?.(text),
+    _fireLiveTranscript: (text) => liveHandler?.(text),
     _fireError: (error) => errorHandler?.(error),
     _fireEnd: () => endHandler?.(),
   }
@@ -80,6 +83,18 @@ describe('createDicteeScreen — enregistrement', () => {
 
     expect(deps.speechCapture.stop).toHaveBeenCalledTimes(1)
     expect(container.querySelector('#processing-msg')).not.toBeNull()
+  })
+
+  it('affiche le transcript en direct dans #live-transcript pendant l\'enregistrement', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+
+    expect(container.querySelector('#live-transcript')).not.toBeNull()
+    deps.speechCapture._fireLiveTranscript('le huit juin deux filles')
+    expect(container.querySelector('#live-transcript').textContent).toBe('le huit juin deux filles')
   })
 })
 

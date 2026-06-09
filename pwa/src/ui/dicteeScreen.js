@@ -3,6 +3,7 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
   let bufferedTranscript = null
 
   speechCapture.onTranscript(handleTranscript)
+  speechCapture.onLiveTranscript(handleLiveTranscript)
   speechCapture.onError(handleSpeechError)
   speechCapture.onEnd(handleSpeechEnd)
 
@@ -19,13 +20,20 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
 
   function startRecording() {
     state = 'recording'
+    bufferedTranscript = null
     const count = sessionStore.getCount()
     container.innerHTML = `
       <div class="session-counter">${count} fiches enregistrées</div>
       <button id="mic-btn">⏹ Appuyer pour arrêter</button>
+      <div id="live-transcript" class="live-transcript">🎤 En écoute...</div>
     `
     container.querySelector('#mic-btn').addEventListener('click', stopRecording)
     speechCapture.start()
+  }
+
+  function handleLiveTranscript(text) {
+    const el = container.querySelector('#live-transcript')
+    if (el) el.textContent = text
   }
 
   function stopRecording() {
