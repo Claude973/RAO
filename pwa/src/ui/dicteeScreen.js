@@ -1,124 +1,69 @@
-export function createDicteeScreen(container, { speechCapture, parsePhrase, buildEntries, submitEntry, sessionStore, notifier }) {
-  let state = 'idle'
+const TRANCHES = ['6 - 10 ans', '11 - 15 ans', '16 - 18 ans', '19 - 25 ans', '+25 ans']
 
-  speechCapture.onLiveTranscript(handleLiveTranscript)
-  speechCapture.onError(handleSpeechError)
-  speechCapture.onEnd(handleSpeechEnd)
-
-  function renderIdle() {
-    state = 'idle'
+export function createDicteeScreen(container, { buildEntries, submitEntry, sessionStore, notifier }) {
+  function renderForm() {
     const count = sessionStore.getCount()
+    const today = new Date().toISOString().slice(0, 10)
     container.innerHTML = `
       <div class="session-counter">${count} fiches enregistrées</div>
-      <button id="mic-btn">🎤 Appuyer pour dicter</button>
+      <form id="saisie-form">
+        <div class="form-row">
+          <label>Date
+            <input id="f-date" type="date" value="${today}" required />
+          </label>
+          <label>Département
+            <input id="f-dept" type="text" placeholder="Ex : 69" required />
+          </label>
+        </div>
+        <fieldset>
+          <legend>Filles</legend>
+          <div class="count-grid">
+            ${TRANCHES.map((t) => `
+              <label>${t}
+                <input type="number" class="count-input" data-sexe="Féminin" data-tranche="${t}" min="0" value="0" />
+              </label>`).join('')}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Garçons</legend>
+          <div class="count-grid">
+            ${TRANCHES.map((t) => `
+              <label>${t}
+                <input type="number" class="count-input" data-sexe="Masculin" data-tranche="${t}" min="0" value="0" />
+              </label>`).join('')}
+          </div>
+        </fieldset>
+        <button type="submit" id="validate-btn">Valider</button>
+      </form>
     `
-    container.querySelector('#mic-btn').addEventListener('click', startRecording)
-  }
-
-  function startRecording() {
-    state = 'recording'
-    const count = sessionStore.getCount()
-    container.innerHTML = `
-      <div class="session-counter">${count} fiches enregistrées</div>
-      <textarea id="dictee-input" class="dictee-textarea"
-        placeholder="Ex : Le 8 juin, 4 filles, entre 6 et 10 ans, département 69"
-        rows="4"></textarea>
-      <button id="analyse-btn">Analyser</button>
-      <button id="cancel-btn">Annuler</button>
-    `
-    const textarea = container.querySelector('#dictee-input')
-    textarea.addEventListener('input', () => { textarea.dataset.userEdited = '1' })
-    textarea.focus()
-    container.querySelector('#analyse-btn').addEventListener('click', analyseInput)
-    container.querySelector('#cancel-btn').addEventListener('click', () => {
-      speechCapture.stop()
-      renderIdle()
+    container.querySelector('#saisie-form').addEventListener('submit', (e) => {
+      e.preventDefault()
+      handleSubmit()
     })
-    speechCapture.start()
   }
 
-  function handleLiveTranscript(text) {
-    const el = container.querySelector('#dictee-input')
-    if (el && !el.dataset.userEdited) el.value = text
+  function handleSubmit() {
+    const date = container.querySelector('#f-date').value
+    const departement = container.querySelector('#f-dept').value.trim()
+    if (!date || !departement) return
+
+    const groups = [...container.querySelectorAll('.count-input')]
+      .map((el) => ({
+        sexe: el.dataset.sexe,
+        trancheAge: el.dataset.tranche,
+        count: parseInt(el.value, 10) || 0,
+      }))
+      .filter((g) => g.count > 0)
+
+    if (groups.length === 0) return
+
+    const allEntries = groups.flatMap((g) =>
+      buildEntries({ date, departement, sexe: g.sexe, trancheAge: g.trancheAge, count: g.count })
+    )
+    startSending(allEntries)
   }
 
-  function analyseInput() {
-    const textarea = container.querySelector('#dictee-input')
-    const text = textarea ? textarea.value.trim() : ''
-    if (!text) return
-    speechCapture.stop()
-    processTranscript(text)
-  }
-
-  function handleSpeechError(error) {
-    if (state !== 'recording') return
-    renderError(`Erreur de reconnaissance vocale : ${error} — Peux-tu redicter ?`)
-  }
-
-  function handleSpeechEnd() {
-    // Recognition stopped during recording — user can still type in textarea
-  }
-
-  function processTranscript(transcript) {
-    const parsed = parsePhrase(transcript)
-    if (!parsed.ok) {
-      const fieldLabels = {
-        date: 'la date',
-        count: 'le nombre de personnes',
-        sexe: 'le sexe',
-        trancheAge: "la tranche d'âge",
-        departement: 'le département',
-      }
-      const missing = parsed.missingFields.map((f) => fieldLabels[f] || f).join(', ')
-      renderError(`Je n'ai pas compris ${missing} — peux-tu redicter ?`)
-    } else {
-      renderReview(parsed)
-    }
-  }
-
-  function renderError(message) {
-    state = 'error'
-    container.innerHTML = `
-      <div class="error-msg">${message}</div>
-      <button id="retry-btn">Redicter</button>
-    `
-    container.querySelector('#retry-btn').addEventListener('click', renderIdle)
-  }
-
-  function renderReview(parsed) {
-    state = 'review'
-    const SEXE_OPTIONS = ['Féminin', 'Masculin']
-    const TRANCHE_OPTIONS = ['6 - 10 ans', '11 - 15 ans', '16 - 18 ans', '19 - 25 ans', '+25 ans']
-    const opt = (value, selected) => `<option value="${value}"${value === selected ? ' selected' : ''}>${value}</option>`
-
-    container.innerHTML = `
-      <div class="review-form">
-        <p class="review-summary">${parsed.count} ${parsed.sexe === 'Féminin' ? 'fille(s)' : 'garçon(s)'}, ${parsed.trancheAge}, dépt ${parsed.departement}, le ${parsed.date}</p>
-        <label>Date : <input id="f-date" type="text" value="${parsed.date}" /></label>
-        <label>Sexe : <select id="f-sexe">${SEXE_OPTIONS.map((v) => opt(v, parsed.sexe)).join('')}</select></label>
-        <label>Tranche d'âge : <select id="f-tranche">${TRANCHE_OPTIONS.map((v) => opt(v, parsed.trancheAge)).join('')}</select></label>
-        <label>Département : <input id="f-dept" type="text" value="${parsed.departement}" /></label>
-        <label>Nombre : <input id="f-count" type="number" min="1" value="${parsed.count}" /></label>
-        <button id="validate-btn">Valider</button>
-        <button id="retry-btn">Redicter depuis le début</button>
-      </div>
-    `
-    container.querySelector('#validate-btn').addEventListener('click', () => {
-      const formParsed = {
-        date: container.querySelector('#f-date').value,
-        sexe: container.querySelector('#f-sexe').value,
-        trancheAge: container.querySelector('#f-tranche').value,
-        departement: container.querySelector('#f-dept').value,
-        count: parseInt(container.querySelector('#f-count').value, 10),
-      }
-      startSending(formParsed)
-    })
-    container.querySelector('#retry-btn').addEventListener('click', renderIdle)
-  }
-
-  async function startSending(parsedForm) {
-    state = 'sending'
-    const entries = buildEntries(parsedForm)
+  async function startSending(entries) {
     const N = entries.length
     const statuses = Array.from({ length: N }, () => null)
 
@@ -142,7 +87,7 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
           container.querySelector(`.retry-entry-btn[data-index="${i}"]`)?.addEventListener('click', () => retryEntry(i))
         }
       })
-      container.querySelector('#back-btn')?.addEventListener('click', renderIdle)
+      container.querySelector('#back-btn')?.addEventListener('click', renderForm)
     }
 
     async function retryEntry(index) {
@@ -169,5 +114,5 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
     renderProgress()
   }
 
-  return { show: renderIdle }
+  return { show: renderForm }
 }

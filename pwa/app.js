@@ -1,7 +1,6 @@
-import { createSpeechCapture } from './src/speechCapture.js'
 import { createSessionStore } from './src/sessionStore.js'
 import { createNotifier, requestNotificationPermission } from './src/notify.js'
-import { parsePhrase, buildEntries } from './src/phraseParser.js'
+import { buildEntries } from './src/phraseParser.js'
 import { submitEntry, sendRecap } from './src/relayClient.js'
 import { buildRecapEmail } from './src/recapEmail.js'
 import { createDicteeScreen } from './src/ui/dicteeScreen.js'
@@ -11,9 +10,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./public/service-worker.js')
 }
 
-const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition
 const sessionStore = createSessionStore(localStorage)
-const speechCapture = createSpeechCapture(SpeechRecognitionImpl)
 
 const notifier = createNotifier(window.Notification, (message) => {
   const banner = document.createElement('div')
@@ -35,8 +32,6 @@ const tabDictee = document.getElementById('tab-dictee')
 const tabHistorique = document.getElementById('tab-historique')
 
 const dicteeScreen = createDicteeScreen(containerDictee, {
-  speechCapture,
-  parsePhrase,
   buildEntries,
   submitEntry,
   sessionStore,

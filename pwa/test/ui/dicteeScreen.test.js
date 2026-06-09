@@ -8,28 +8,11 @@ function makeContainer() {
   return div
 }
 
-function createFakeSpeechCapture() {
-  let liveHandler = null
-  let errorHandler = null
-  let endHandler = null
-  return {
-    start: vi.fn(),
-    stop: vi.fn(),
-    onTranscript: vi.fn(),
-    onLiveTranscript: (h) => { liveHandler = h },
-    onError: (h) => { errorHandler = h },
-    onEnd: (h) => { endHandler = h },
-    _fireLiveTranscript: (text) => liveHandler?.(text),
-    _fireError: (error) => errorHandler?.(error),
-    _fireEnd: () => endHandler?.(),
-  }
-}
-
 function makeDeps(overrides = {}) {
   return {
-    speechCapture: createFakeSpeechCapture(),
-    parsePhrase: vi.fn(),
-    buildEntries: vi.fn().mockReturnValue([]),
+    buildEntries: vi.fn().mockImplementation(({ count }) =>
+      Array.from({ length: count }, (_, i) => ({ id: i }))
+    ),
     submitEntry: vi.fn(),
     sessionStore: {
       addEntry: vi.fn().mockReturnValue({ count: 1, shouldNotify: false }),
@@ -46,201 +29,112 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('createDicteeScreen — repos', () => {
-  it('affiche le compteur de session et le bouton micro au repos', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-    deps.sessionStore.getCount.mockReturnValue(5)
-
-    createDicteeScreen(container, deps).show()
-
-    expect(container.querySelector('.session-counter').textContent).toBe('5 fiches enregistrées')
-    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
-  })
-})
-
-describe('createDicteeScreen — enregistrement', () => {
-  it('démarre speechCapture et affiche la zone de saisie quand on clique sur le micro', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-
-    expect(deps.speechCapture.start).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('#dictee-input')).not.toBeNull()
-    expect(container.querySelector('#analyse-btn')).not.toBeNull()
-  })
-
-  it('Analyser arrête speechCapture et appelle parsePhrase avec le contenu de la zone de saisie', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-    deps.parsePhrase.mockReturnValue({ ok: false, missingFields: ['date'] })
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireLiveTranscript('le huit juin')
-    container.querySelector('#analyse-btn').click()
-
-    expect(deps.speechCapture.stop).toHaveBeenCalledTimes(1)
-    expect(deps.parsePhrase).toHaveBeenCalledWith('le huit juin')
-  })
-
-  it('met à jour la zone de saisie en direct pendant l\'enregistrement', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-
-    expect(container.querySelector('#dictee-input')).not.toBeNull()
-    deps.speechCapture._fireLiveTranscript('le huit juin deux filles')
-    expect(container.querySelector('#dictee-input').value).toBe('le huit juin deux filles')
-  })
-
-  it('Annuler arrête speechCapture et revient à l\'écran repos', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    container.querySelector('#cancel-btn').click()
-
-    expect(deps.speechCapture.stop).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
-  })
-})
-
-describe('createDicteeScreen — erreur de reconnaissance vocale', () => {
-  it('affiche un message d\'erreur et le bouton "Redicter" en cas d\'erreur vocale', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireError('no-speech')
-
-    expect(container.querySelector('.error-msg').textContent).toContain('Erreur de reconnaissance vocale')
-    expect(container.querySelector('#retry-btn')).not.toBeNull()
-  })
-
-  it('retourne à l\'écran repos en cliquant sur "Redicter"', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireError('no-speech')
-    container.querySelector('#retry-btn').click()
-
-    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
-  })
-})
-
-describe('createDicteeScreen — erreur d\'analyse (parsePhrase)', () => {
-  it('affiche les champs manquants quand parsePhrase retourne ok=false', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-    deps.parsePhrase.mockReturnValue({ ok: false, missingFields: ['date', 'trancheAge'] })
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireLiveTranscript('deux filles département soixante-neuf')
-    container.querySelector('#analyse-btn').click()
-
-    expect(container.querySelector('.error-msg').textContent).toContain('la date')
-    expect(container.querySelector('.error-msg').textContent).toContain("la tranche d'âge")
-  })
-})
-
-describe('createDicteeScreen — revue/confirmation', () => {
-  const PARSED_OK = {
-    ok: true,
-    date: '2026-06-08',
-    count: 3,
-    sexe: 'Féminin',
-    trancheAge: '6 - 10 ans',
-    departement: '69',
+function fillAndSubmit(container, { date = '2026-06-09', dept = '69', filles = {}, garcons = {} } = {}) {
+  container.querySelector('#f-date').value = date
+  container.querySelector('#f-dept').value = dept
+  for (const [tranche, count] of Object.entries(filles)) {
+    const el = container.querySelector(`.count-input[data-sexe="Féminin"][data-tranche="${tranche}"]`)
+    if (el) el.value = String(count)
   }
-
-  function navigateToReview(container, deps) {
-    deps.parsePhrase.mockReturnValue(PARSED_OK)
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireLiveTranscript('test')
-    container.querySelector('#analyse-btn').click()
+  for (const [tranche, count] of Object.entries(garcons)) {
+    const el = container.querySelector(`.count-input[data-sexe="Masculin"][data-tranche="${tranche}"]`)
+    if (el) el.value = String(count)
   }
+  container.querySelector('#saisie-form').dispatchEvent(new Event('submit'))
+}
 
-  it('affiche les champs pré-remplis avec les valeurs extraites', () => {
+describe('createDicteeScreen — formulaire', () => {
+  it('affiche le compteur et le formulaire de saisie', () => {
     const container = makeContainer()
     const deps = makeDeps()
-    navigateToReview(container, deps)
+    deps.sessionStore.getCount.mockReturnValue(3)
 
-    expect(container.querySelector('#f-date').value).toBe('2026-06-08')
-    expect(container.querySelector('#f-sexe').value).toBe('Féminin')
-    expect(container.querySelector('#f-tranche').value).toBe('6 - 10 ans')
-    expect(container.querySelector('#f-dept').value).toBe('69')
-    expect(container.querySelector('#f-count').value).toBe('3')
+    createDicteeScreen(container, deps).show()
+
+    expect(container.querySelector('.session-counter').textContent).toBe('3 fiches enregistrées')
+    expect(container.querySelector('#f-date')).not.toBeNull()
+    expect(container.querySelector('#f-dept')).not.toBeNull()
+    expect(container.querySelectorAll('.count-input[data-sexe="Féminin"]').length).toBe(5)
+    expect(container.querySelectorAll('.count-input[data-sexe="Masculin"]').length).toBe(5)
   })
 
-  it('affiche les boutons "Valider" et "Redicter depuis le début"', () => {
+  it('pré-remplit la date avec la date du jour au format YYYY-MM-DD', () => {
     const container = makeContainer()
-    const deps = makeDeps()
-    navigateToReview(container, deps)
+    createDicteeScreen(container, makeDeps()).show()
 
-    expect(container.querySelector('#validate-btn')).not.toBeNull()
-    expect(container.querySelector('#retry-btn')).not.toBeNull()
+    const today = new Date().toISOString().slice(0, 10)
+    expect(container.querySelector('#f-date').value).toBe(today)
   })
 
-  it('le select tranche d\'âge propose les 5 tranches dans le bon ordre', () => {
+  it('ne soumet pas si le département est manquant', () => {
     const container = makeContainer()
     const deps = makeDeps()
-    navigateToReview(container, deps)
+    deps.submitEntry = vi.fn()
+    createDicteeScreen(container, deps).show()
 
-    const options = [...container.querySelectorAll('#f-tranche option')].map((o) => o.value)
-    expect(options).toEqual(['6 - 10 ans', '11 - 15 ans', '16 - 18 ans', '19 - 25 ans', '+25 ans'])
+    fillAndSubmit(container, { dept: '', filles: { '6 - 10 ans': 2 } })
+
+    expect(deps.submitEntry).not.toHaveBeenCalled()
   })
 
-  it('retourne à l\'écran repos en cliquant sur "Redicter depuis le début"', () => {
+  it('ne soumet pas si tous les compteurs sont à 0', () => {
     const container = makeContainer()
     const deps = makeDeps()
-    navigateToReview(container, deps)
-    container.querySelector('#retry-btn').click()
+    deps.submitEntry = vi.fn()
+    createDicteeScreen(container, deps).show()
 
-    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
+    fillAndSubmit(container, { dept: '69' })
+
+    expect(deps.submitEntry).not.toHaveBeenCalled()
+  })
+
+  it('appelle buildEntries pour chaque groupe non-nul', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
+    createDicteeScreen(container, deps).show()
+
+    fillAndSubmit(container, {
+      filles: { '6 - 10 ans': 3 },
+      garcons: { '11 - 15 ans': 2 },
+    })
+
+    expect(deps.buildEntries).toHaveBeenCalledWith(
+      expect.objectContaining({ sexe: 'Féminin', trancheAge: '6 - 10 ans', count: 3 })
+    )
+    expect(deps.buildEntries).toHaveBeenCalledWith(
+      expect.objectContaining({ sexe: 'Masculin', trancheAge: '11 - 15 ans', count: 2 })
+    )
+    expect(deps.buildEntries).toHaveBeenCalledTimes(2)
+  })
+
+  it('passe la date et le département à buildEntries', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
+    createDicteeScreen(container, deps).show()
+
+    fillAndSubmit(container, {
+      date: '2026-06-09',
+      dept: '69',
+      filles: { '19 - 25 ans': 1 },
+    })
+
+    expect(deps.buildEntries).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-06-09', departement: '69' })
+    )
   })
 })
 
 describe('createDicteeScreen — envoi', () => {
-  const PARSED_OK = {
-    ok: true,
-    date: '2026-06-08',
-    count: 2,
-    sexe: 'Féminin',
-    trancheAge: '6 - 10 ans',
-    departement: '69',
-  }
-  const ENTRIES = [
-    { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
-    { date: '2026-06-08', sexe: 'Féminin', trancheAge: '6 - 10 ans', departement: '69' },
-  ]
-
-  function navigateToReview(container, deps) {
-    deps.parsePhrase.mockReturnValue(PARSED_OK)
-    deps.buildEntries.mockReturnValue(ENTRIES)
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireLiveTranscript('test')
-    container.querySelector('#analyse-btn').click()
-  }
-
-  it('affiche le bouton "Retour à l\'accueil" une fois toutes les fiches envoyées avec succès', async () => {
+  it('affiche "Retour à l\'accueil" une fois toutes les fiches envoyées', async () => {
     const container = makeContainer()
     const deps = makeDeps()
+    deps.buildEntries.mockReturnValue([{ id: 1 }, { id: 2 }])
     deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
-    navigateToReview(container, deps)
+    createDicteeScreen(container, deps).show()
 
-    container.querySelector('#validate-btn').click()
+    fillAndSubmit(container, { filles: { '6 - 10 ans': 2 } })
 
     await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
 
@@ -251,14 +145,14 @@ describe('createDicteeScreen — envoi', () => {
   it('affiche le bouton "Relancer" pour les fiches échouées', async () => {
     const container = makeContainer()
     const deps = makeDeps()
+    deps.buildEntries.mockReturnValue([{ id: 1 }])
     deps.submitEntry = vi.fn().mockResolvedValue({ success: false, error: 'network_error' })
-    navigateToReview(container, deps)
+    createDicteeScreen(container, deps).show()
 
-    container.querySelector('#validate-btn').click()
+    fillAndSubmit(container, { filles: { '6 - 10 ans': 1 } })
 
     await vi.waitFor(() => expect(container.querySelector('.retry-entry-btn')).not.toBeNull())
 
-    expect(container.querySelector('.retry-entry-btn')).not.toBeNull()
     expect(container.querySelector('#back-btn')).not.toBeNull()
     expect(deps.sessionStore.addEntry).not.toHaveBeenCalled()
   })
@@ -266,85 +160,47 @@ describe('createDicteeScreen — envoi', () => {
   it('relance une fiche échouée et la marque comme réussie', async () => {
     const container = makeContainer()
     const deps = makeDeps()
+    deps.buildEntries.mockReturnValue([{ id: 1 }])
     deps.submitEntry = vi.fn()
       .mockResolvedValueOnce({ success: false, error: 'network_error' })
-      .mockResolvedValueOnce({ success: true })
       .mockResolvedValue({ success: true })
-    navigateToReview(container, deps)
+    createDicteeScreen(container, deps).show()
 
-    container.querySelector('#validate-btn').click()
+    fillAndSubmit(container, { filles: { '6 - 10 ans': 1 } })
     await vi.waitFor(() => expect(container.querySelector('.retry-entry-btn')).not.toBeNull())
 
     container.querySelector('.retry-entry-btn').click()
     await vi.waitFor(() => expect(container.querySelector('.retry-entry-btn')).toBeNull())
 
-    expect(deps.sessionStore.addEntry).toHaveBeenCalledTimes(2)
+    expect(deps.sessionStore.addEntry).toHaveBeenCalledTimes(1)
   })
 
-  it('déclenche la notification quand addEntry retourne shouldNotify=true', async () => {
+  it('déclenche la notification quand shouldNotify=true', async () => {
     const container = makeContainer()
     const deps = makeDeps()
+    deps.buildEntries.mockReturnValue([{ id: 1 }])
     deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
     deps.sessionStore.addEntry = vi.fn().mockReturnValue({ count: 10, shouldNotify: true })
-    navigateToReview(container, deps)
+    createDicteeScreen(container, deps).show()
 
-    container.querySelector('#validate-btn').click()
+    fillAndSubmit(container, { filles: { '6 - 10 ans': 1 } })
+
     await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
 
     expect(deps.notifier.notify).toHaveBeenCalledWith('10 fiches enregistrées')
   })
 
-  it('retourne à l\'écran repos en cliquant sur "Retour à l\'accueil"', async () => {
+  it('retourne au formulaire depuis "Retour à l\'accueil"', async () => {
     const container = makeContainer()
     const deps = makeDeps()
+    deps.buildEntries.mockReturnValue([{ id: 1 }])
     deps.submitEntry = vi.fn().mockResolvedValue({ success: true })
-    navigateToReview(container, deps)
+    createDicteeScreen(container, deps).show()
 
-    container.querySelector('#validate-btn').click()
+    fillAndSubmit(container, { filles: { '6 - 10 ans': 1 } })
     await vi.waitFor(() => expect(container.querySelector('#back-btn')).not.toBeNull())
     container.querySelector('#back-btn').click()
 
-    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
-  })
-})
-
-describe('createDicteeScreen — saisie via clavier iOS', () => {
-  it('met à jour la zone de saisie avec les transcripts successifs et traite au clic Analyser', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-    deps.parsePhrase.mockReturnValue({
-      ok: true,
-      date: '2026-06-09',
-      count: 1,
-      sexe: 'Masculin',
-      trancheAge: '11 - 15 ans',
-      departement: '69',
-    })
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-
-    // Résultats progressifs (interim puis final)
-    deps.speechCapture._fireLiveTranscript('un garçon onze')
-    expect(container.querySelector('.review-form')).toBeNull()
-    expect(container.querySelector('#dictee-input')).not.toBeNull()
-
-    deps.speechCapture._fireLiveTranscript('un garçon onze quinze ans département soixante-neuf')
-    container.querySelector('#analyse-btn').click()
-
-    expect(container.querySelector('.review-form')).not.toBeNull()
-    expect(container.querySelector('#f-date').value).toBe('2026-06-09')
-  })
-
-  it('ne montre pas d\'erreur si onEnd se déclenche pendant l\'enregistrement (l\'utilisateur peut toujours saisir)', () => {
-    const container = makeContainer()
-    const deps = makeDeps()
-
-    createDicteeScreen(container, deps).show()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireEnd()
-
-    expect(container.querySelector('.error-msg')).toBeNull()
-    expect(container.querySelector('#dictee-input')).not.toBeNull()
+    expect(container.querySelector('#saisie-form')).not.toBeNull()
   })
 })
