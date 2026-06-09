@@ -1,17 +1,17 @@
 {
-  "name": "RAO — Saisie vocale",
+  "name": "RAO — Saisie Prox",
   "short_name": "RAO",
-  "description": "Application de saisie vocale pour les journées Prox de RAO",
+  "description": "Application de saisie pour les journées Prox de RAO",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1f4e79",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "lang": "fr",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>",
+      "src": "icon.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
