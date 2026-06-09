@@ -1,14 +1,12 @@
 export function createDicteeScreen(container, { speechCapture, parsePhrase, buildEntries, submitEntry, sessionStore, notifier }) {
   let state = 'idle'
-  let bufferedTranscript = null
 
-  speechCapture.onTranscript(handleTranscript)
+  speechCapture.onLiveTranscript(handleLiveTranscript)
   speechCapture.onError(handleSpeechError)
   speechCapture.onEnd(handleSpeechEnd)
 
   function renderIdle() {
     state = 'idle'
-    bufferedTranscript = null
     const count = sessionStore.getCount()
     container.innerHTML = `
       <div class="session-counter">${count} fiches enregistrées</div>
@@ -22,21 +20,34 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
     const count = sessionStore.getCount()
     container.innerHTML = `
       <div class="session-counter">${count} fiches enregistrées</div>
-      <button id="mic-btn">⏹ Appuyer pour arrêter</button>
+      <textarea id="dictee-input" class="dictee-textarea"
+        placeholder="Ex : Le 8 juin, 4 filles, entre 6 et 10 ans, département 69"
+        rows="4"></textarea>
+      <button id="analyse-btn">Analyser</button>
+      <button id="cancel-btn">Annuler</button>
     `
-    container.querySelector('#mic-btn').addEventListener('click', stopRecording)
+    const textarea = container.querySelector('#dictee-input')
+    textarea.addEventListener('input', () => { textarea.dataset.userEdited = '1' })
+    textarea.focus()
+    container.querySelector('#analyse-btn').addEventListener('click', analyseInput)
+    container.querySelector('#cancel-btn').addEventListener('click', () => {
+      speechCapture.stop()
+      renderIdle()
+    })
     speechCapture.start()
   }
 
-  function stopRecording() {
-    state = 'processing'
-    container.innerHTML = `<div id="processing-msg">Analyse en cours...</div>`
+  function handleLiveTranscript(text) {
+    const el = container.querySelector('#dictee-input')
+    if (el && !el.dataset.userEdited) el.value = text
+  }
+
+  function analyseInput() {
+    const textarea = container.querySelector('#dictee-input')
+    const text = textarea ? textarea.value.trim() : ''
+    if (!text) return
     speechCapture.stop()
-    if (bufferedTranscript !== null) {
-      const t = bufferedTranscript
-      bufferedTranscript = null
-      processTranscript(t)
-    }
+    processTranscript(text)
   }
 
   function handleSpeechError(error) {
@@ -45,18 +56,7 @@ export function createDicteeScreen(container, { speechCapture, parsePhrase, buil
   }
 
   function handleSpeechEnd() {
-    if (state === 'processing') {
-      renderError("La reconnaissance vocale s'est arrêtée sans résultat — réessaie")
-    }
-  }
-
-  function handleTranscript(transcript) {
-    if (state === 'recording') {
-      bufferedTranscript = transcript
-      return
-    }
-    if (state !== 'processing') return
-    processTranscript(transcript)
+    // Recognition stopped during recording — user can still type in textarea
   }
 
   function processTranscript(transcript) {

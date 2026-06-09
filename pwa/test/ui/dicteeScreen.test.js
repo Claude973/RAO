@@ -9,16 +9,17 @@ function makeContainer() {
 }
 
 function createFakeSpeechCapture() {
-  let transcriptHandler = null
+  let liveHandler = null
   let errorHandler = null
   let endHandler = null
   return {
     start: vi.fn(),
     stop: vi.fn(),
-    onTranscript: (h) => { transcriptHandler = h },
+    onTranscript: vi.fn(),
+    onLiveTranscript: (h) => { liveHandler = h },
     onError: (h) => { errorHandler = h },
     onEnd: (h) => { endHandler = h },
-    _fireTranscript: (text) => transcriptHandler?.(text),
+    _fireLiveTranscript: (text) => liveHandler?.(text),
     _fireError: (error) => errorHandler?.(error),
     _fireEnd: () => endHandler?.(),
   }
@@ -59,7 +60,7 @@ describe('createDicteeScreen — repos', () => {
 })
 
 describe('createDicteeScreen — enregistrement', () => {
-  it('démarre speechCapture et change le texte du bouton quand on clique sur le micro', () => {
+  it('démarre speechCapture et affiche la zone de saisie quand on clique sur le micro', () => {
     const container = makeContainer()
     const deps = makeDeps()
 
@@ -67,19 +68,46 @@ describe('createDicteeScreen — enregistrement', () => {
     container.querySelector('#mic-btn').click()
 
     expect(deps.speechCapture.start).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('#mic-btn').textContent).toBe('⏹ Appuyer pour arrêter')
+    expect(container.querySelector('#dictee-input')).not.toBeNull()
+    expect(container.querySelector('#analyse-btn')).not.toBeNull()
   })
 
-  it('arrête speechCapture et affiche le message d\'analyse quand on reclique', () => {
+  it('Analyser arrête speechCapture et appelle parsePhrase avec le contenu de la zone de saisie', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+    deps.parsePhrase.mockReturnValue({ ok: false, missingFields: ['date'] })
+
+    createDicteeScreen(container, deps).show()
+    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireLiveTranscript('le huit juin')
+    container.querySelector('#analyse-btn').click()
+
+    expect(deps.speechCapture.stop).toHaveBeenCalledTimes(1)
+    expect(deps.parsePhrase).toHaveBeenCalledWith('le huit juin')
+  })
+
+  it('met à jour la zone de saisie en direct pendant l\'enregistrement', () => {
     const container = makeContainer()
     const deps = makeDeps()
 
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
+
+    expect(container.querySelector('#dictee-input')).not.toBeNull()
+    deps.speechCapture._fireLiveTranscript('le huit juin deux filles')
+    expect(container.querySelector('#dictee-input').value).toBe('le huit juin deux filles')
+  })
+
+  it('Annuler arrête speechCapture et revient à l\'écran repos', () => {
+    const container = makeContainer()
+    const deps = makeDeps()
+
+    createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
+    container.querySelector('#cancel-btn').click()
 
     expect(deps.speechCapture.stop).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('#processing-msg')).not.toBeNull()
+    expect(container.querySelector('#mic-btn').textContent).toBe('🎤 Appuyer pour dicter')
   })
 })
 
@@ -117,8 +145,8 @@ describe('createDicteeScreen — erreur d\'analyse (parsePhrase)', () => {
 
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireTranscript('deux filles département soixante-neuf')
+    deps.speechCapture._fireLiveTranscript('deux filles département soixante-neuf')
+    container.querySelector('#analyse-btn').click()
 
     expect(container.querySelector('.error-msg').textContent).toContain('la date')
     expect(container.querySelector('.error-msg').textContent).toContain("la tranche d'âge")
@@ -139,8 +167,8 @@ describe('createDicteeScreen — revue/confirmation', () => {
     deps.parsePhrase.mockReturnValue(PARSED_OK)
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireTranscript('test')
+    deps.speechCapture._fireLiveTranscript('test')
+    container.querySelector('#analyse-btn').click()
   }
 
   it('affiche les champs pré-remplis avec les valeurs extraites', () => {
@@ -202,8 +230,8 @@ describe('createDicteeScreen — envoi', () => {
     deps.buildEntries.mockReturnValue(ENTRIES)
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
-    container.querySelector('#mic-btn').click()
-    deps.speechCapture._fireTranscript('test')
+    deps.speechCapture._fireLiveTranscript('test')
+    container.querySelector('#analyse-btn').click()
   }
 
   it('affiche le bouton "Retour à l\'accueil" une fois toutes les fiches envoyées avec succès', async () => {
@@ -280,8 +308,8 @@ describe('createDicteeScreen — envoi', () => {
   })
 })
 
-describe('createDicteeScreen — comportement iOS (pauses pendant enregistrement)', () => {
-  it('accumule les transcripts partiels pendant l\'enregistrement et traite au clic stop', () => {
+describe('createDicteeScreen — saisie via clavier iOS', () => {
+  it('met à jour la zone de saisie avec les transcripts successifs et traite au clic Analyser', () => {
     const container = makeContainer()
     const deps = makeDeps()
     deps.parsePhrase.mockReturnValue({
@@ -296,30 +324,27 @@ describe('createDicteeScreen — comportement iOS (pauses pendant enregistrement
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
 
-    // Simule iOS qui envoie un résultat partiel pendant l'enregistrement
-    deps.speechCapture._fireTranscript('un garçon onze')
-    // Le formulaire ne doit pas encore apparaître
+    // Résultats progressifs (interim puis final)
+    deps.speechCapture._fireLiveTranscript('un garçon onze')
     expect(container.querySelector('.review-form')).toBeNull()
-    expect(container.querySelector('#mic-btn')).not.toBeNull()
+    expect(container.querySelector('#dictee-input')).not.toBeNull()
 
-    // L'utilisateur clique sur stop — le transcript accumulé est traité
-    deps.speechCapture._fireTranscript('un garçon onze quinze ans département soixante-neuf')
-    container.querySelector('#mic-btn').click()
+    deps.speechCapture._fireLiveTranscript('un garçon onze quinze ans département soixante-neuf')
+    container.querySelector('#analyse-btn').click()
 
     expect(container.querySelector('.review-form')).not.toBeNull()
     expect(container.querySelector('#f-date').value).toBe('2026-06-09')
   })
 
-  it('affiche une erreur si onEnd se déclenche sans résultat (état processing)', () => {
+  it('ne montre pas d\'erreur si onEnd se déclenche pendant l\'enregistrement (l\'utilisateur peut toujours saisir)', () => {
     const container = makeContainer()
     const deps = makeDeps()
 
     createDicteeScreen(container, deps).show()
     container.querySelector('#mic-btn').click()
-    container.querySelector('#mic-btn').click()
     deps.speechCapture._fireEnd()
 
-    expect(container.querySelector('.error-msg')).not.toBeNull()
-    expect(container.querySelector('.error-msg').textContent).toContain('sans résultat')
+    expect(container.querySelector('.error-msg')).toBeNull()
+    expect(container.querySelector('#dictee-input')).not.toBeNull()
   })
 })
