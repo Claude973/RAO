@@ -74,7 +74,7 @@ export function createDicteeScreen(container, { buildEntries, submitEntry, sessi
             .map(
               (s, i) => `
             <div class="entry-row">
-              Fiche ${i + 1}/${N} ${s === null ? '⏳' : s.success ? '✓' : '✗'}
+              Fiche ${i + 1}/${N} ${s === null ? '⏳' : s.success ? '✓' : `✗ <span class="entry-error">${s.error ?? ''}</span>`}
               ${s !== null && !s.success ? `<button class="retry-entry-btn" data-index="${i}">Relancer</button>` : ''}
             </div>`
             )

@@ -1,9 +1,19 @@
 import { submitEntry } from './quform.js'
 import { sendRecapEmail } from './mailer.js'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS })
+    }
 
     if (request.method !== 'POST') {
       return jsonResponse({ error: 'method_not_allowed' }, 405)
@@ -52,6 +62,6 @@ export default {
 function jsonResponse(data, status) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   })
 }
