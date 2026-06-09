@@ -2,7 +2,7 @@
   "name": "RAO — Saisie Prox",
   "short_name": "RAO",
   "description": "Application de saisie pour les journées Prox de RAO",
-  "start_url": ".",
+  "start_url": "/RAO/",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
